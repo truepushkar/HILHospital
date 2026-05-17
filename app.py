@@ -318,19 +318,29 @@ components.html(
     body{
         margin:0;
         padding:0;
+        background:#000;
+    }
+
+    #clock-container{
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        width:100%;
     }
 
     #clock{
         font-size:26px;
         font-weight:700;
-        padding:10px;
-        border-radius:10px;
+        padding:10px 20px;
+        border-radius:12px;
         text-align:center;
 
-        background-color: var(--background-color);
-        color: var(--text-color);
+        background:#000000;     /* black background */
+        color:#ffffff;          /* white text */
 
-        border:1px solid var(--secondary-background-color);
+        border:1px solid #333;
+        box-shadow:0 0 10px rgba(255,255,255,0.15);
+        font-family:monospace;
     }
     </style>
 
@@ -350,9 +360,8 @@ components.html(
     setInterval(updateClock,1000);
     </script>
     """,
-    height=70
+    height=80
 )
-
 
 with st.sidebar:
     st.header("Login")
