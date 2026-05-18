@@ -8,10 +8,12 @@ import threading
 
 import requests
 from bs4 import BeautifulSoup
+import os
+
 from flask import Flask, request, jsonify, session, render_template, Response, stream_with_context
 
 app = Flask(__name__)
-app.secret_key = "hospital-reg-secret-2024"
+app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
 
 BASE = "https://hrfjne8ujy3mixh-hilapex.adb.ap-mumbai-1.oraclecloudapps.com"
 LOGIN_URL = f"{BASE}/ords/r/xxhilapxprd01/hospital-registration-system-renukoot/login"
@@ -413,4 +415,4 @@ def api_submit():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0",port=5000, threaded=True)
+    app.run(debug=False, host="0.0.0.0",port=5000, threaded=True)
