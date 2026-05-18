@@ -1,0 +1,1213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hospital Registration</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+/* ── Reset & Variables ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0a0c10;
+  --surface:  #111318;
+  --card:     #161a22;
+  --border:   #232733;
+  --accent:   #00e5a0;
+  --accent2:  #0077ff;
+  --danger:   #ff4560;
+  --warn:     #ffb830;
+  --text:     #e8eaf2;
+  --muted:    #6b7280;
+  --font-ui:  'Syne', sans-serif;
+  --font-mono:'Space Mono', monospace;
+  --radius:   10px;
+  --shadow:   0 4px 24px rgba(0,0,0,0.5);
+  --transition: 0.18s ease;
+  --sidebar-w: 280px;
+  --topbar-h:  58px;
+}
+
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+}
+
+/* ── Layout ──────────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  min-height: 100vh;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────── */
+.topbar {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: var(--topbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Hamburger button — visible only on mobile */
+.hamburger {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: var(--text);
+  flex-direction: column;
+  gap: 4px;
+  border-radius: 6px;
+  transition: background var(--transition);
+}
+.hamburger:hover { background: rgba(255,255,255,0.06); }
+.hamburger span {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+.hamburger.open span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.hamburger.open span:nth-child(2) { opacity: 0; }
+.hamburger.open span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.topbar-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+
+.topbar-title .dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.6; transform: scale(0.85); }
+}
+
+.clock {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  background: rgba(0,229,160,0.07);
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,229,160,0.18);
+  white-space: nowrap;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────── */
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  overflow-y: auto;
+  /* desktop: normal flow */
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sidebar-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+/* ── Mobile sidebar overlay ──────────────────────────────── */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 299;
+  backdrop-filter: blur(2px);
+}
+
+/* ── Form Controls ───────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+input[type="text"],
+input[type="password"],
+select {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.88rem;
+  width: 100%;
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  appearance: none;
+  min-height: 42px; /* better touch target */
+}
+
+input:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(0,229,160,0.12);
+}
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+select option { background: var(--card); }
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 18px;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all var(--transition);
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+  min-height: 44px; /* touch-friendly */
+}
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary { background: var(--accent); color: #000; width: 100%; }
+.btn-primary:not(:disabled):hover {
+  background: #00ffb3;
+  box-shadow: 0 0 20px rgba(0,229,160,0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  width: 100%;
+}
+.btn-secondary:not(:disabled):hover {
+  background: rgba(0,119,255,0.1);
+  box-shadow: 0 0 16px rgba(0,119,255,0.2);
+}
+
+.btn-danger { background: var(--accent2); color: #fff; width: 100%; }
+.btn-danger:not(:disabled):hover {
+  background: #0066e0;
+  box-shadow: 0 0 20px rgba(0,119,255,0.4);
+  transform: translateY(-1px);
+}
+
+/* ── Status Badge ────────────────────────────────────────── */
+.status-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.badge-success { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+.badge-error   { background: rgba(255,69,96,0.12);  color: var(--danger); border: 1px solid rgba(255,69,96,0.3); }
+.badge-info    { background: rgba(0,119,255,0.1);   color: var(--accent2);border: 1px solid rgba(0,119,255,0.3); }
+
+/* ── Main Content ────────────────────────────────────────── */
+.main {
+  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  min-width: 0; /* prevent grid blowout */
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .icon {
+  width: 26px; height: 26px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.icon-green { background: rgba(0,229,160,0.12); color: var(--accent); }
+.icon-blue  { background: rgba(0,119,255,0.12); color: var(--accent2); }
+.icon-warn  { background: rgba(255,184,48,0.12); color: var(--warn); }
+
+/* ── Booking grid: 2-col on wide, 1-col on narrow ───────── */
+.booking-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+/* ── Toast ───────────────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  top: 16px; right: 16px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: calc(100vw - 32px);
+}
+
+.toast {
+  font-size: 0.82rem;
+  font-family: var(--font-ui);
+  padding: 11px 16px;
+  border-radius: 10px;
+  max-width: 320px;
+  pointer-events: all;
+  animation: slideIn 0.2s ease forwards;
+  border-left: 3px solid;
+  word-break: break-word;
+}
+.toast-success { background: #0d1f18; color: var(--accent); border-color: var(--accent); }
+.toast-error   { background: #1f0d11; color: var(--danger); border-color: var(--danger); }
+.toast-info    { background: #0d1525; color: var(--accent2); border-color: var(--accent2); }
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Progress ────────────────────────────────────────────── */
+.progress-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.progress-bar-track {
+  height: 6px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent2), var(--accent));
+  border-radius: 999px;
+  transition: width 0.4s ease;
+  width: 0%;
+  box-shadow: 0 0 10px rgba(0,229,160,0.5);
+}
+
+.progress-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+/* ── Request Grid ────────────────────────────────────────── */
+.req-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.req-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color var(--transition);
+  min-width: 0;
+}
+
+.req-card.pending  { border-color: var(--border); }
+.req-card.running  { border-color: var(--accent2); box-shadow: 0 0 10px rgba(0,119,255,0.15); }
+.req-card.success  { border-color: rgba(0,229,160,0.3); }
+.req-card.error    { border-color: rgba(255,69,96,0.3); }
+
+.req-id {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.req-status {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.req-text {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ── Divider ─────────────────────────────────────────────── */
+.divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+/* ── Spinner ─────────────────────────────────────────────── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,0.15);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hidden { display: none !important; }
+
+/* ── Scrollbar ───────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Tablet: ≤ 900px ─────────────────────────────────────── */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;  /* sidebar goes off-screen */
+    grid-template-rows: var(--topbar-h) 1fr;
+  }
+
+  /* Hamburger visible */
+  .hamburger { display: flex; }
+
+  /* Sidebar becomes a fixed drawer */
+  .sidebar {
+    position: fixed;
+    top: var(--topbar-h);
+    left: 0;
+    bottom: 0;
+    width: min(var(--sidebar-w), 85vw);
+    z-index: 300;
+    transform: translateX(-110%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+    box-shadow: 4px 0 32px rgba(0,0,0,0.6);
+  }
+
+  .sidebar-overlay {
+    display: block; /* rendered, but only visible when .open */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sidebar-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  /* Main spans full width */
+  .main {
+    grid-column: 1;
+    padding: 18px 16px;
+  }
+}
+
+/* ── Phone: ≤ 600px ──────────────────────────────────────── */
+@media (max-width: 600px) {
+  html { font-size: 14px; }
+
+  .topbar-title {
+    font-size: 0.88rem;
+    gap: 8px;
+  }
+
+  .clock {
+    font-size: 0.78rem;
+    padding: 4px 9px;
+    letter-spacing: 0.04em;
+  }
+
+  .main { padding: 14px 12px; gap: 14px; }
+
+  .card { padding: 16px 14px; border-radius: 12px; }
+
+  /* Stack booking selectors vertically */
+  .booking-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Request grid: 2 compact columns on phone */
+  .req-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .req-card { padding: 10px 11px; }
+
+  .req-id   { font-size: 0.65rem; }
+  .req-text { font-size: 0.58rem; }
+
+  /* Toast full-width on phone */
+  #toast-container { left: 12px; right: 12px; top: 12px; }
+  .toast { max-width: 100%; }
+
+  .status-badge { font-size: 0.65rem; padding: 2px 7px; }
+}
+
+/* ── Very small: ≤ 360px ─────────────────────────────────── */
+@media (max-width: 360px) {
+  .clock { display: none; } /* hide clock to save space */
+  .req-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div id="toast-container"></div>
+
+<!-- Mobile overlay behind sidebar -->
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<div class="layout">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <!-- Hamburger (mobile only) -->
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-title">
+        <span class="dot"></span>
+        Hospital Registration
+      </div>
+    </div>
+    <div class="clock" id="clock">00:00:00</div>
+  </header>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-section">
+      <span class="sidebar-label">Session Login</span>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter username" autocomplete="off" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+
+      <button class="btn btn-primary" id="btn-login">
+        <span id="login-spinner" class="spinner hidden"></span>
+        <span id="login-text">Start Session</span>
+      </button>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sidebar-section hidden" id="dep-section">
+      <span class="sidebar-label">Dependent</span>
+      <div class="field">
+        <label for="dep-select">Select dependent</label>
+        <select id="dep-select"></select>
+      </div>
+      <button class="btn btn-secondary" id="btn-load-dept">
+        <span id="dept-spinner" class="spinner hidden"></span>
+        <span id="dept-text">Load Departments</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- Welcome / empty state -->
+    <div id="welcome-card" class="card">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon icon-blue">⚕</div>
+          Getting Started
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">
+        Enter your credentials in the
+        <strong style="color:var(--text)">sidebar</strong>
+        and click <strong style="color:var(--text)">Start Session</strong> to begin.
+        Once logged in, select a dependent and proceed to book an appointment.
+      </p>
+    </div>
+
+    <!-- Department + Doctor Card -->
+    <div id="booking-card" class="card hidden">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon icon-green">🏥</div>
+          Book Appointment
+        </div>
+        <span class="status-badge badge-info" id="booking-status">Awaiting selection</span>
+      </div>
+
+      <!-- Department row -->
+      <div class="booking-row">
+        <div class="field">
+          <label for="dept-select">Department</label>
+          <select id="dept-select" disabled></select>
+        </div>
+        <div class="field" style="align-self:end;">
+          <button class="btn btn-secondary" id="btn-load-docs" disabled>
+            <span id="docs-spinner" class="spinner hidden"></span>
+            <span id="docs-text">Load Doctors</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Doctor row -->
+      <div id="doc-row" class="booking-row hidden">
+        <div class="field">
+          <label for="doc-select">Doctor</label>
+          <select id="doc-select"></select>
+        </div>
+        <div class="field" style="align-self:end;">
+          <button class="btn btn-danger" id="btn-submit">
+            <span id="submit-spinner" class="spinner hidden"></span>
+            <span id="submit-text">Submit Appointment</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress & Results Card -->
+    <div id="results-card" class="card hidden">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon icon-warn">📋</div>
+          Appointment Responses
+        </div>
+        <span class="status-badge badge-info" id="results-status">0 / 20</span>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progress-bar"></div>
+        </div>
+        <div class="progress-label" id="progress-label">Waiting to start...</div>
+      </div>
+
+      <div class="req-grid" id="req-grid"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ── Clock ─────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const pad = n => String(n).padStart(2,'0');
+
+  document.getElementById('clock').textContent =
+    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+}
+updateClock();
+setInterval(updateClock,1000);
+
+
+// ── Sidebar Drawer ───────────────────────────────────────
+const hamburger = document.getElementById('hamburger');
+const sidebar   = document.getElementById('sidebar');
+const overlay   = document.getElementById('sidebar-overlay');
+
+let sidebarLocked = false;
+
+
+// User finished setup?
+function isSetupComplete() {
+
+  const depVisible =
+    !document.getElementById('dep-section')
+      .classList.contains('hidden');
+
+  const depValue =
+    document.getElementById('dep-select').value;
+
+  return depVisible && depValue;
+}
+
+
+function openSidebar() {
+
+  sidebar.classList.add('open');
+  overlay.classList.add('open');
+  hamburger.classList.add('open');
+
+  hamburger.setAttribute(
+    'aria-expanded',
+    'true'
+  );
+
+  document.body.style.overflow='hidden';
+}
+
+
+function closeSidebar() {
+
+  if(sidebarLocked) return;
+
+  sidebar.classList.remove('open');
+  overlay.classList.remove('open');
+  hamburger.classList.remove('open');
+
+  hamburger.setAttribute(
+    'aria-expanded',
+    'false'
+  );
+
+  document.body.style.overflow='';
+}
+
+
+function lockSidebar(){
+
+  sidebarLocked=true;
+
+  if(window.innerWidth<=900){
+      openSidebar();
+  }
+
+}
+
+function unlockSidebar(){
+
+  sidebarLocked=false;
+
+  if(window.innerWidth<=900){
+
+      setTimeout(()=>{
+          closeSidebar();
+      },300);
+
+  }
+
+}
+
+
+// Mobile onboarding on first page load
+window.addEventListener('load',()=>{
+
+    if(
+      window.innerWidth<=900 &&
+      !isSetupComplete()
+    ){
+        lockSidebar();
+    }
+
+});
+
+
+hamburger.addEventListener('click',()=>{
+
+    if(sidebarLocked) return;
+
+    sidebar.classList.contains('open')
+      ? closeSidebar()
+      : openSidebar();
+
+});
+
+overlay.addEventListener('click',()=>{
+
+    if(!sidebarLocked){
+        closeSidebar();
+    }
+
+});
+
+document.addEventListener('keydown',(e)=>{
+
+    if(
+      e.key==='Escape' &&
+      !sidebarLocked
+    ){
+        closeSidebar();
+    }
+
+});
+
+
+function closeSidebarOnMobile(){
+
+    if(
+      window.innerWidth<=900 &&
+      !sidebarLocked
+    ){
+        closeSidebar();
+    }
+
+}
+
+
+// ── Toast ────────────────────────────────────────────────
+function toast(msg,type='info'){
+
+    const el=document.createElement('div');
+
+    el.className=`toast toast-${type}`;
+    el.textContent=msg;
+
+    document
+      .getElementById('toast-container')
+      .appendChild(el);
+
+    setTimeout(()=>{
+        el.remove();
+    },4000);
+
+}
+
+
+// ── State ────────────────────────────────────────────────
+let state={
+    departments:[],
+    doctors:[]
+};
+
+
+// ── Login ────────────────────────────────────────────────
+document
+.getElementById('btn-login')
+.addEventListener('click',async()=>{
+
+    const username=
+      document
+      .getElementById('username')
+      .value.trim();
+
+    const password=
+      document
+      .getElementById('password')
+      .value.trim();
+
+    if(!username||!password){
+
+        toast(
+          'Enter username and password.',
+          'error'
+        );
+
+        return;
+    }
+
+    const btn=
+      document.getElementById('btn-login');
+
+    btn.disabled=true;
+
+    document
+      .getElementById('login-spinner')
+      .classList.remove('hidden');
+
+    document
+      .getElementById('login-text')
+      .textContent='Connecting...';
+
+    try{
+
+        const res=await fetch(
+            '/api/login',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    username,
+                    password
+                })
+            }
+        );
+
+        const data=await res.json();
+
+        if(!data.ok){
+            throw new Error(data.error);
+        }
+
+        toast(
+          `Session started — HTTP ${data.status}`,
+          'success'
+        );
+
+        document
+          .getElementById('welcome-card')
+          .classList.add('hidden');
+
+
+        const depSel=
+          document.getElementById('dep-select');
+
+        depSel.innerHTML='';
+
+        data.dependents.forEach(d=>{
+
+            const opt=
+              document.createElement('option');
+
+            opt.value=d.idx;
+            opt.textContent=d.label;
+
+            depSel.appendChild(opt);
+
+        });
+
+        document
+          .getElementById('dep-section')
+          .classList.remove('hidden');
+
+
+    }catch(e){
+
+        toast(
+          `Login failed: ${e.message}`,
+          'error'
+        );
+
+    }
+    finally{
+
+        btn.disabled=false;
+
+        document
+          .getElementById('login-spinner')
+          .classList.add('hidden');
+
+        document
+          .getElementById('login-text')
+          .textContent='Start Session';
+
+    }
+
+});
+
+
+
+// ── Departments ──────────────────────────────────────────
+document
+.getElementById('btn-load-dept')
+.addEventListener('click',async()=>{
+
+    const dep_idx=
+      document
+      .getElementById('dep-select')
+      .value;
+
+    const btn=
+      document.getElementById('btn-load-dept');
+
+    btn.disabled=true;
+
+    document
+      .getElementById('dept-spinner')
+      .classList.remove('hidden');
+
+    document
+      .getElementById('dept-text')
+      .textContent='Loading...';
+
+    try{
+
+        const res=await fetch(
+            '/api/departments',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    dep_idx:parseInt(dep_idx)
+                })
+            }
+        );
+
+        const data=await res.json();
+
+        if(!data.ok){
+            throw new Error(data.error);
+        }
+
+        state.departments=data.departments;
+
+        const deptSel=
+          document.getElementById('dept-select');
+
+        deptSel.innerHTML='';
+
+        data.departments.forEach(d=>{
+
+            const opt=
+              document.createElement('option');
+
+            opt.value=d.code;
+            opt.textContent=
+            `${d.code} — ${d.name}`;
+
+            deptSel.appendChild(opt);
+
+        });
+
+        deptSel.disabled=false;
+
+        document
+          .getElementById('btn-load-docs')
+          .disabled=false;
+
+        document
+          .getElementById('booking-card')
+          .classList.remove('hidden');
+
+        document
+          .getElementById('booking-status')
+          .textContent='Select department';
+
+        toast(
+          'Departments loaded.',
+          'success'
+        );
+
+        // Unlock onboarding
+        unlockSidebar();
+
+    }
+    catch(e){
+
+        toast(
+          `Error: ${e.message}`,
+          'error'
+        );
+
+    }
+    finally{
+
+        btn.disabled=false;
+
+        document
+          .getElementById('dept-spinner')
+          .classList.add('hidden');
+
+        document
+          .getElementById('dept-text')
+          .textContent='Load Departments';
+
+    }
+
+});
+
+
+// ── Doctors ──────────────────────────────────────────────
+document
+.getElementById('btn-load-docs')
+.addEventListener('click',async()=>{
+
+    const dept_code=
+      document
+      .getElementById('dept-select')
+      .value;
+
+    const btn=
+      document.getElementById('btn-load-docs');
+
+    btn.disabled=true;
+
+    document
+      .getElementById('docs-spinner')
+      .classList.remove('hidden');
+
+    document
+      .getElementById('docs-text')
+      .textContent='Loading...';
+
+    try{
+
+        const res=await fetch(
+            '/api/doctors',
+            {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json'
+                },
+                body:JSON.stringify({
+                    dept_code
+                })
+            }
+        );
+
+        const data=await res.json();
+
+        if(!data.ok){
+            throw new Error(data.error);
+        }
+
+        const docSel=
+          document.getElementById('doc-select');
+
+        docSel.innerHTML='';
+
+        data.doctors.forEach(d=>{
+
+            const opt=
+              document.createElement('option');
+
+            opt.value=d.value;
+            opt.dataset.label=d.label;
+
+            opt.textContent=
+            `${d.value} — ${d.label}`;
+
+            docSel.appendChild(opt);
+
+        });
+
+        document
+          .getElementById('doc-row')
+          .classList.remove('hidden');
+
+        document
+          .getElementById('booking-status')
+          .textContent='Select doctor';
+
+        toast(
+          'Doctors loaded.',
+          'success'
+        );
+
+    }
+    catch(e){
+
+        toast(
+          `Error: ${e.message}`,
+          'error'
+        );
+
+    }
+    finally{
+
+        btn.disabled=false;
+
+        document
+          .getElementById('docs-spinner')
+          .classList.add('hidden');
+
+        document
+          .getElementById('docs-text')
+          .textContent='Load Doctors';
+
+    }
+
+});
+</script>
+</body>
+</html>
