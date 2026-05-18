@@ -159,6 +159,48 @@ def extract_new_registration_page(http_session: requests.Session, p_instance: st
     return resp.text
 
 
+def extract_opd_status(html_content):
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    results = []
+
+    # Find all OPD rows
+    rows = soup.select("table.a-IRR-table tr td div")
+
+    for row in rows:
+        text = row.get_text(" ", strip=True)
+
+        # Skip irrelevant rows
+        if "Patient No" not in text:
+            continue
+
+        # Extract key/value pairs
+        pattern = (
+            r"Patient No\s*-->\s*(.*?),\s*"
+            r"Patient Name\s*-->\s*(.*?),\s*"
+            r"Token No\s*-->\s*(.*?),\s*"
+            r"Doctor Name\s*-->\s*(.*?),\s*"
+            r"Visit No\s*-->\s*(.*?),\s*"
+            r"Employee Code\s*-->\s*(.*)"
+        )
+
+        match = re.search(pattern, text)
+
+        if match:
+            opd_data = {
+                "patient_no": match.group(1).strip(),
+                "patient_name": match.group(2).strip(),
+                "token_no": match.group(3).strip(),
+                "doctor_name": match.group(4).strip(),
+                "visit_no": match.group(5).strip(),
+                "employee_code": match.group(6).strip()
+            }
+
+            results.append(opd_data)
+
+    return results
+
+
 def extract_departments(page_html: str):
     soup = BeautifulSoup(page_html, "html.parser")
     select = soup.select_one("#P4_DEPARTMENTS")
@@ -195,6 +237,17 @@ def get_doctor_plugin(page_html: str):
                 return html.unescape(m.group(1)).replace("\\u002F", "/")
     return None
 
+def get_opd_status(http_session: requests.Session, p_instance: str):
+    params = {
+        'session': f'{p_instance}',
+    }
+
+    response = http_session.get(
+        'https://hrfjne8ujy3mixh-hilapex.adb.ap-mumbai-1.oraclecloudapps.com/ords/r/xxhilapxprd01/hospital-registration-system-renukoot/opd-status',
+        params=params,
+        headers=browser_headers(),
+    )
+    return extract_opd_status(response.text)
 
 def fetch_doctors(http_session: requests.Session, p_instance: str, department_code: str, page_html: str):
     soup = BeautifulSoup(page_html, "html.parser")
@@ -294,6 +347,18 @@ def index():
     session.setdefault("sid", str(id(session)))
     return render_template("index.html")
 
+@app.route("/api/opd_status")
+def api_opd_status():
+    sid = session.get("sid")
+    store = get_store(sid)
+    meta = store.get("meta")
+    if not meta:
+        return jsonify({"ok": False, "error": "Not logged in."}), 400
+    try:
+        response = get_opd_status(store["http_session"], meta["p_instance"])
+        return jsonify({"ok": True, "status": response})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 @app.route("/api/login", methods=["POST"])
 def api_login():
@@ -384,7 +449,7 @@ def api_submit():
             yield f"data: {json.dumps({'type': 'error', 'msg': str(e)})}\n\n"
             return
 
-        results = [None] * 20
+        results = [None] * 30
 
         def make_req(req_id):
             try:
@@ -395,10 +460,10 @@ def api_submit():
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
             futures = {}
-            for i in range(1, 21):
+            for i in range(1, 31):
                 f = executor.submit(make_req, i)
                 futures[f] = i
-                time.sleep(1)
+                time.sleep(0.25)
                 # Report progress after each submission
                 yield f"data: {json.dumps({'type': 'progress', 'submitted': i})}\n\n"
 
@@ -414,5 +479,5 @@ def api_submit():
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-#if __name__ == "__main__":
-#    app.run(debug=False, host="0.0.0.0",port=8000, threaded=True)
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0",port=8000, threaded=True)

@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Hospital Registration</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
 <style>
 /* ── Reset & Variables ───────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -24,9 +23,9 @@
   --font-mono:'Space Mono', monospace;
   --radius:   10px;
   --shadow:   0 4px 24px rgba(0,0,0,0.5);
-  --transition: 0.18s ease;
   --sidebar-w: 280px;
   --topbar-h:  58px;
+  --transition: 0.18s ease;
 }
 
 html { font-size: 15px; }
@@ -69,7 +68,6 @@ body {
   gap: 12px;
 }
 
-/* Hamburger button — visible only on mobile */
 .hamburger {
   display: none;
   background: none;
@@ -140,7 +138,6 @@ body {
   flex-direction: column;
   gap: 22px;
   overflow-y: auto;
-  /* desktop: normal flow */
 }
 
 .sidebar-section {
@@ -157,7 +154,6 @@ body {
   color: var(--muted);
 }
 
-/* ── Mobile sidebar overlay ──────────────────────────────── */
 .sidebar-overlay {
   display: none;
   position: fixed;
@@ -191,7 +187,7 @@ select {
   outline: none;
   transition: border-color var(--transition), box-shadow var(--transition);
   appearance: none;
-  min-height: 42px; /* better touch target */
+  min-height: 42px;
 }
 
 input:focus, select:focus {
@@ -226,7 +222,7 @@ select option { background: var(--card); }
   letter-spacing: 0.01em;
   position: relative;
   overflow: hidden;
-  min-height: 44px; /* touch-friendly */
+  min-height: 44px;
 }
 
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -256,6 +252,17 @@ select option { background: var(--card); }
   transform: translateY(-1px);
 }
 
+.btn-opd {
+  background: rgba(255,184,48,0.12);
+  color: var(--warn);
+  border: 1px solid rgba(255,184,48,0.35);
+  width: 100%;
+}
+.btn-opd:not(:disabled):hover {
+  background: rgba(255,184,48,0.22);
+  box-shadow: 0 0 16px rgba(255,184,48,0.2);
+}
+
 /* ── Status Badge ────────────────────────────────────────── */
 .status-badge {
   font-size: 0.72rem;
@@ -269,6 +276,7 @@ select option { background: var(--card); }
 .badge-success { background: rgba(0,229,160,0.12); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
 .badge-error   { background: rgba(255,69,96,0.12);  color: var(--danger); border: 1px solid rgba(255,69,96,0.3); }
 .badge-info    { background: rgba(0,119,255,0.1);   color: var(--accent2);border: 1px solid rgba(0,119,255,0.3); }
+.badge-warn    { background: rgba(255,184,48,0.12); color: var(--warn);   border: 1px solid rgba(255,184,48,0.3); }
 
 /* ── Main Content ────────────────────────────────────────── */
 .main {
@@ -277,7 +285,7 @@ select option { background: var(--card); }
   flex-direction: column;
   gap: 20px;
   overflow-y: auto;
-  min-width: 0; /* prevent grid blowout */
+  min-width: 0;
 }
 
 /* ── Card ────────────────────────────────────────────────── */
@@ -320,8 +328,9 @@ select option { background: var(--card); }
 .icon-green { background: rgba(0,229,160,0.12); color: var(--accent); }
 .icon-blue  { background: rgba(0,119,255,0.12); color: var(--accent2); }
 .icon-warn  { background: rgba(255,184,48,0.12); color: var(--warn); }
+.icon-red   { background: rgba(255,69,96,0.12); color: var(--danger); }
 
-/* ── Booking grid: 2-col on wide, 1-col on narrow ───────── */
+/* ── Booking grid ────────────────────────────────────────── */
 .booking-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -355,6 +364,7 @@ select option { background: var(--card); }
 .toast-success { background: #0d1f18; color: var(--accent); border-color: var(--accent); }
 .toast-error   { background: #1f0d11; color: var(--danger); border-color: var(--danger); }
 .toast-info    { background: #0d1525; color: var(--accent2); border-color: var(--accent2); }
+.toast-warn    { background: #1f1800; color: var(--warn);   border-color: var(--warn); }
 
 @keyframes slideIn {
   from { opacity: 0; transform: translateX(30px); }
@@ -370,7 +380,6 @@ select option { background: var(--card); }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 16px;
 }
 
 .progress-bar-track {
@@ -395,50 +404,104 @@ select option { background: var(--card); }
   color: var(--muted);
 }
 
-/* ── Request Grid ────────────────────────────────────────── */
-.req-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
-}
-
-.req-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
+/* ── Result Banner ───────────────────────────────────────── */
+.result-banner {
   border-radius: 10px;
-  padding: 12px 14px;
+  padding: 18px 20px;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  transition: border-color var(--transition);
-  min-width: 0;
+  align-items: flex-start;
+  gap: 14px;
+  margin-top: 16px;
 }
 
-.req-card.pending  { border-color: var(--border); }
-.req-card.running  { border-color: var(--accent2); box-shadow: 0 0 10px rgba(0,119,255,0.15); }
-.req-card.success  { border-color: rgba(0,229,160,0.3); }
-.req-card.error    { border-color: rgba(255,69,96,0.3); }
+.result-banner.success {
+  background: rgba(0,229,160,0.07);
+  border: 1px solid rgba(0,229,160,0.25);
+}
 
-.req-id {
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
+.result-banner.failure {
+  background: rgba(255,69,96,0.07);
+  border: 1px solid rgba(255,69,96,0.25);
+}
+
+.result-banner .banner-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.result-banner .banner-body {}
+
+.result-banner .banner-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.result-banner.success .banner-title { color: var(--accent); }
+.result-banner.failure .banner-title { color: var(--danger); }
+
+.result-banner .banner-msg {
+  font-size: 0.8rem;
   color: var(--muted);
-  font-weight: 700;
+  line-height: 1.6;
 }
 
-.req-status {
-  font-size: 0.82rem;
-  font-weight: 700;
+/* ── OPD Status table ────────────────────────────────────── */
+.opd-table-wrap {
+  overflow-x: auto;
+  margin-top: 4px;
 }
 
-.req-text {
-  font-family: var(--font-mono);
-  font-size: 0.62rem;
+.opd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  min-width: 480px;
+}
+
+.opd-table th {
+  text-align: left;
+  padding: 9px 12px;
   color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
+}
+
+.opd-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(35,39,51,0.6);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text);
+  vertical-align: middle;
+}
+
+.opd-table tr:last-child td { border-bottom: none; }
+
+.opd-table tr:hover td {
+  background: rgba(255,255,255,0.02);
+}
+
+.opd-token {
+  display: inline-block;
+  background: rgba(0,229,160,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(0,229,160,0.25);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.opd-empty {
+  text-align: center;
+  padding: 28px 0;
+  color: var(--muted);
+  font-size: 0.82rem;
 }
 
 /* ── Divider ─────────────────────────────────────────────── */
@@ -464,20 +527,14 @@ select option { background: var(--card); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 /* ══════════════════════════════════════════════════════════
-   RESPONSIVE BREAKPOINTS
+   RESPONSIVE
    ══════════════════════════════════════════════════════════ */
-
-/* ── Tablet: ≤ 900px ─────────────────────────────────────── */
 @media (max-width: 900px) {
   .layout {
-    grid-template-columns: 1fr;  /* sidebar goes off-screen */
+    grid-template-columns: 1fr;
     grid-template-rows: var(--topbar-h) 1fr;
   }
-
-  /* Hamburger visible */
   .hamburger { display: flex; }
-
-  /* Sidebar becomes a fixed drawer */
   .sidebar {
     position: fixed;
     top: var(--topbar-h);
@@ -490,14 +547,12 @@ select option { background: var(--card); }
     border-right: 1px solid var(--border);
     overflow-y: auto;
   }
-
   .sidebar.open {
     transform: translateX(0);
     box-shadow: 4px 0 32px rgba(0,0,0,0.6);
   }
-
   .sidebar-overlay {
-    display: block; /* rendered, but only visible when .open */
+    display: block;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
@@ -506,68 +561,32 @@ select option { background: var(--card); }
     opacity: 1;
     pointer-events: all;
   }
-
-  /* Main spans full width */
   .main {
     grid-column: 1;
     padding: 18px 16px;
   }
 }
 
-/* ── Phone: ≤ 600px ──────────────────────────────────────── */
 @media (max-width: 600px) {
   html { font-size: 14px; }
-
-  .topbar-title {
-    font-size: 0.88rem;
-    gap: 8px;
-  }
-
-  .clock {
-    font-size: 0.78rem;
-    padding: 4px 9px;
-    letter-spacing: 0.04em;
-  }
-
+  .topbar-title { font-size: 0.88rem; gap: 8px; }
+  .clock { font-size: 0.78rem; padding: 4px 9px; letter-spacing: 0.04em; }
   .main { padding: 14px 12px; gap: 14px; }
-
   .card { padding: 16px 14px; border-radius: 12px; }
-
-  /* Stack booking selectors vertically */
-  .booking-row {
-    grid-template-columns: 1fr;
-  }
-
-  /* Request grid: 2 compact columns on phone */
-  .req-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-  }
-
-  .req-card { padding: 10px 11px; }
-
-  .req-id   { font-size: 0.65rem; }
-  .req-text { font-size: 0.58rem; }
-
-  /* Toast full-width on phone */
+  .booking-row { grid-template-columns: 1fr; }
   #toast-container { left: 12px; right: 12px; top: 12px; }
   .toast { max-width: 100%; }
-
   .status-badge { font-size: 0.65rem; padding: 2px 7px; }
 }
 
-/* ── Very small: ≤ 360px ─────────────────────────────────── */
 @media (max-width: 360px) {
-  .clock { display: none; } /* hide clock to save space */
-  .req-grid { grid-template-columns: 1fr; }
+  .clock { display: none; }
 }
 </style>
 </head>
 <body>
 
 <div id="toast-container"></div>
-
-<!-- Mobile overlay behind sidebar -->
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
 <div class="layout">
@@ -575,13 +594,12 @@ select option { background: var(--card); }
   <!-- TOP BAR -->
   <header class="topbar">
     <div class="topbar-left">
-      <!-- Hamburger (mobile only) -->
       <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <div class="topbar-title">
         <span class="dot"></span>
-        Hospital Registration
+        Hindalco Hospital Registration
       </div>
     </div>
     <div class="clock" id="clock">00:00:00</div>
@@ -591,17 +609,14 @@ select option { background: var(--card); }
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-section">
       <span class="sidebar-label">Session Login</span>
-
       <div class="field">
         <label for="username">Username</label>
         <input type="text" id="username" placeholder="Enter username" autocomplete="off" />
       </div>
-
       <div class="field">
         <label for="password">Password</label>
         <input type="password" id="password" placeholder="••••••••" />
       </div>
-
       <button class="btn btn-primary" id="btn-login">
         <span id="login-spinner" class="spinner hidden"></span>
         <span id="login-text">Start Session</span>
@@ -609,6 +624,17 @@ select option { background: var(--card); }
     </div>
 
     <div class="divider"></div>
+
+    <!-- OPD Status button — shown after login -->
+    <div class="sidebar-section hidden" id="opd-btn-section">
+      <span class="sidebar-label">OPD Status</span>
+      <button class="btn btn-opd" id="btn-opd-status">
+        <span id="opd-spinner" class="spinner hidden"></span>
+        <span id="opd-text">📋 View OPD Status</span>
+      </button>
+    </div>
+
+    <div class="divider hidden" id="dep-divider"></div>
 
     <div class="sidebar-section hidden" id="dep-section">
       <span class="sidebar-label">Dependent</span>
@@ -626,7 +652,7 @@ select option { background: var(--card); }
   <!-- MAIN CONTENT -->
   <main class="main">
 
-    <!-- Welcome / empty state -->
+    <!-- Welcome card -->
     <div id="welcome-card" class="card">
       <div class="card-header">
         <div class="card-title">
@@ -642,6 +668,40 @@ select option { background: var(--card); }
       </p>
     </div>
 
+    <!-- OPD Status Card -->
+    <div id="opd-card" class="card hidden">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon icon-warn">📋</div>
+          OPD Status
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="status-badge badge-warn" id="opd-count-badge">— records</span>
+          <button class="btn btn-opd" id="btn-refresh-opd" style="width:auto;padding:6px 14px;font-size:0.78rem;min-height:32px;">
+            <span id="refresh-spinner" class="spinner hidden"></span>
+            <span id="refresh-text">↻ Refresh</span>
+          </button>
+        </div>
+      </div>
+      <div class="opd-table-wrap">
+        <table class="opd-table">
+          <thead>
+            <tr>
+              <th>Patient No</th>
+              <th>Patient Name</th>
+              <th>Token</th>
+              <th>Doctor</th>
+              <th>Visit No</th>
+              <th>Emp. Code</th>
+            </tr>
+          </thead>
+          <tbody id="opd-tbody">
+            <tr><td colspan="6" class="opd-empty">No records loaded yet.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Department + Doctor Card -->
     <div id="booking-card" class="card hidden">
       <div class="card-header">
@@ -652,7 +712,6 @@ select option { background: var(--card); }
         <span class="status-badge badge-info" id="booking-status">Awaiting selection</span>
       </div>
 
-      <!-- Department row -->
       <div class="booking-row">
         <div class="field">
           <label for="dept-select">Department</label>
@@ -666,7 +725,6 @@ select option { background: var(--card); }
         </div>
       </div>
 
-      <!-- Doctor row -->
       <div id="doc-row" class="booking-row hidden">
         <div class="field">
           <label for="doc-select">Doctor</label>
@@ -681,14 +739,14 @@ select option { background: var(--card); }
       </div>
     </div>
 
-    <!-- Progress & Results Card -->
+    <!-- Progress & Result Card -->
     <div id="results-card" class="card hidden">
       <div class="card-header">
         <div class="card-title">
-          <div class="icon icon-warn">📋</div>
-          Appointment Responses
+          <div class="icon icon-warn">⏳</div>
+          Submission Progress
         </div>
-        <span class="status-badge badge-info" id="results-status">0 / 20</span>
+        <span class="status-badge badge-info" id="results-status">0 / 30</span>
       </div>
 
       <div class="progress-wrap">
@@ -698,7 +756,8 @@ select option { background: var(--card); }
         <div class="progress-label" id="progress-label">Waiting to start...</div>
       </div>
 
-      <div class="req-grid" id="req-grid"></div>
+      <!-- Result banner shown after stream completes -->
+      <div id="result-banner" class="hidden"></div>
     </div>
 
   </main>
@@ -706,507 +765,445 @@ select option { background: var(--card); }
 
 <script>
 // ── Clock ─────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const pad = n => String(n).padStart(2,'0');
-
-  document.getElementById('clock').textContent =
+function updateClock(){
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent=
     `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 updateClock();
 setInterval(updateClock,1000);
 
-
 // ── Sidebar Drawer ───────────────────────────────────────
-const hamburger = document.getElementById('hamburger');
-const sidebar   = document.getElementById('sidebar');
-const overlay   = document.getElementById('sidebar-overlay');
+const hamburger=document.getElementById('hamburger');
+const sidebar=document.getElementById('sidebar');
+const overlay=document.getElementById('sidebar-overlay');
+let sidebarLocked=false;
 
-let sidebarLocked = false;
-
-
-// User finished setup?
-function isSetupComplete() {
-
-  const depVisible =
-    !document.getElementById('dep-section')
-      .classList.contains('hidden');
-
-  const depValue =
-    document.getElementById('dep-select').value;
-
-  return depVisible && depValue;
+function isSetupComplete(){
+  const depVisible=!document.getElementById('dep-section').classList.contains('hidden');
+  const depValue=document.getElementById('dep-select').value;
+  return depVisible&&depValue;
 }
 
-
-function openSidebar() {
-
+function openSidebar(){
   sidebar.classList.add('open');
   overlay.classList.add('open');
   hamburger.classList.add('open');
-
-  hamburger.setAttribute(
-    'aria-expanded',
-    'true'
-  );
-
+  hamburger.setAttribute('aria-expanded','true');
   document.body.style.overflow='hidden';
 }
 
-
-function closeSidebar() {
-
-  if(sidebarLocked) return;
-
+function closeSidebar(){
+  if(sidebarLocked)return;
   sidebar.classList.remove('open');
   overlay.classList.remove('open');
   hamburger.classList.remove('open');
-
-  hamburger.setAttribute(
-    'aria-expanded',
-    'false'
-  );
-
+  hamburger.setAttribute('aria-expanded','false');
   document.body.style.overflow='';
 }
 
-
 function lockSidebar(){
-
   sidebarLocked=true;
-
-  if(window.innerWidth<=900){
-      openSidebar();
-  }
-
+  if(window.innerWidth<=900)openSidebar();
 }
 
 function unlockSidebar(){
-
   sidebarLocked=false;
-
-  if(window.innerWidth<=900){
-
-      setTimeout(()=>{
-          closeSidebar();
-      },300);
-
-  }
-
+  if(window.innerWidth<=900)setTimeout(()=>closeSidebar(),300);
 }
 
-
-// Mobile onboarding on first page load
 window.addEventListener('load',()=>{
-
-    if(
-      window.innerWidth<=900 &&
-      !isSetupComplete()
-    ){
-        lockSidebar();
-    }
-
+  if(window.innerWidth<=900&&!isSetupComplete())lockSidebar();
 });
 
-
 hamburger.addEventListener('click',()=>{
-
-    if(sidebarLocked) return;
-
-    sidebar.classList.contains('open')
-      ? closeSidebar()
-      : openSidebar();
-
+  if(sidebarLocked)return;
+  sidebar.classList.contains('open')?closeSidebar():openSidebar();
 });
 
 overlay.addEventListener('click',()=>{
-
-    if(!sidebarLocked){
-        closeSidebar();
-    }
-
+  if(!sidebarLocked)closeSidebar();
 });
 
 document.addEventListener('keydown',(e)=>{
-
-    if(
-      e.key==='Escape' &&
-      !sidebarLocked
-    ){
-        closeSidebar();
-    }
-
+  if(e.key==='Escape'&&!sidebarLocked)closeSidebar();
 });
-
 
 function closeSidebarOnMobile(){
-
-    if(
-      window.innerWidth<=900 &&
-      !sidebarLocked
-    ){
-        closeSidebar();
-    }
-
+  if(window.innerWidth<=900&&!sidebarLocked)closeSidebar();
 }
-
 
 // ── Toast ────────────────────────────────────────────────
-function toast(msg,type='info'){
-
-    const el=document.createElement('div');
-
-    el.className=`toast toast-${type}`;
-    el.textContent=msg;
-
-    document
-      .getElementById('toast-container')
-      .appendChild(el);
-
-    setTimeout(()=>{
-        el.remove();
-    },4000);
-
+function toast(msg,type='info',duration=4000){
+  const el=document.createElement('div');
+  el.className=`toast toast-${type}`;
+  el.textContent=msg;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),duration);
 }
 
-
 // ── State ────────────────────────────────────────────────
-let state={
-    departments:[],
-    doctors:[]
-};
+let state={departments:[],doctors:[]};
 
+// ── OPD Status helpers ────────────────────────────────────
+function renderOpdTable(records){
+  const tbody=document.getElementById('opd-tbody');
+  const badge=document.getElementById('opd-count-badge');
+
+  if(!records||records.length===0){
+    tbody.innerHTML=`<tr><td colspan="6" class="opd-empty">No active OPD records found.</td></tr>`;
+    badge.textContent='0 records';
+    return;
+  }
+
+  badge.textContent=`${records.length} record${records.length!==1?'s':''}`;
+  tbody.innerHTML=records.map(r=>`
+    <tr>
+      <td>${r.patient_no||'—'}</td>
+      <td style="font-family:var(--font-ui);font-weight:600;">${r.patient_name||'—'}</td>
+      <td><span class="opd-token">${r.token_no||'—'}</span></td>
+      <td style="font-family:var(--font-ui);">${r.doctor_name||'—'}</td>
+      <td>${r.visit_no||'—'}</td>
+      <td>${r.employee_code||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+async function loadOpdStatus(showCard=true){
+  const btn=document.getElementById('btn-opd-status');
+  const refreshBtn=document.getElementById('btn-refresh-opd');
+
+  // Spinner on both buttons
+  document.getElementById('opd-spinner').classList.remove('hidden');
+  document.getElementById('opd-text').textContent='Loading...';
+  document.getElementById('refresh-spinner').classList.remove('hidden');
+  document.getElementById('refresh-text').textContent='Loading...';
+  btn.disabled=true;
+  refreshBtn.disabled=true;
+
+  try{
+    const res=await fetch('/api/opd_status');
+    const data=await res.json();
+
+    if(!data.ok)throw new Error(data.error);
+
+    if(showCard){
+      document.getElementById('opd-card').classList.remove('hidden');
+    }
+
+    renderOpdTable(data.status);
+    toast(`OPD status loaded — ${(data.status||[]).length} record(s).`,'success');
+
+    // Scroll OPD card into view
+    document.getElementById('opd-card').scrollIntoView({behavior:'smooth',block:'start'});
+
+  }catch(e){
+    toast(`OPD status error: ${e.message}`,'error');
+  }finally{
+    document.getElementById('opd-spinner').classList.add('hidden');
+    document.getElementById('opd-text').textContent='📋 View OPD Status';
+    document.getElementById('refresh-spinner').classList.add('hidden');
+    document.getElementById('refresh-text').textContent='↻ Refresh';
+    btn.disabled=false;
+    refreshBtn.disabled=false;
+  }
+}
+
+document.getElementById('btn-opd-status').addEventListener('click',()=>loadOpdStatus(true));
+document.getElementById('btn-refresh-opd').addEventListener('click',()=>loadOpdStatus(false));
+
+// ── Result banner helper ──────────────────────────────────
+function showResultBanner(success, message){
+  const banner=document.getElementById('result-banner');
+  const icon=success?'✅':'❌';
+  const cls=success?'success':'failure';
+  const title=success?'Appointment Registered!':'Registration Failed';
+
+  // Update card header icon
+  const cardIcon=document.querySelector('#results-card .card-title .icon');
+  if(cardIcon){
+    cardIcon.className=`icon ${success?'icon-green':'icon-red'}`;
+    cardIcon.textContent=success?'✓':'✕';
+  }
+
+  banner.className=`result-banner ${cls}`;
+  banner.innerHTML=`
+    <div class="banner-icon">${icon}</div>
+    <div class="banner-body">
+      <div class="banner-title">${title}</div>
+      <div class="banner-msg">${message}</div>
+    </div>
+  `;
+  banner.classList.remove('hidden');
+  banner.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  if(success){
+    toast('Appointment registered successfully!','success',6000);
+    // Auto-load OPD status after 1 second
+    setTimeout(()=>loadOpdStatus(true),1000);
+  }else{
+    toast(message,'error',6000);
+  }
+}
 
 // ── Login ────────────────────────────────────────────────
-document
-.getElementById('btn-login')
-.addEventListener('click',async()=>{
+document.getElementById('btn-login').addEventListener('click',async()=>{
+  const username=document.getElementById('username').value.trim();
+  const password=document.getElementById('password').value.trim();
 
-    const username=
-      document
-      .getElementById('username')
-      .value.trim();
+  if(!username||!password){
+    toast('Enter username and password.','error');
+    return;
+  }
 
-    const password=
-      document
-      .getElementById('password')
-      .value.trim();
+  const btn=document.getElementById('btn-login');
+  btn.disabled=true;
+  document.getElementById('login-spinner').classList.remove('hidden');
+  document.getElementById('login-text').textContent='Connecting...';
 
-    if(!username||!password){
+  try{
+    const res=await fetch('/api/login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
 
-        toast(
-          'Enter username and password.',
-          'error'
-        );
+    toast(`Session started — HTTP ${data.status}`,'success');
 
-        return;
-    }
+    document.getElementById('welcome-card').classList.add('hidden');
 
-    const btn=
-      document.getElementById('btn-login');
+    // Show OPD button
+    document.getElementById('opd-btn-section').classList.remove('hidden');
+    document.getElementById('dep-divider').classList.remove('hidden');
 
-    btn.disabled=true;
+    const depSel=document.getElementById('dep-select');
+    depSel.innerHTML='';
+    data.dependents.forEach(d=>{
+      const opt=document.createElement('option');
+      opt.value=d.idx;
+      opt.textContent=d.label;
+      depSel.appendChild(opt);
+    });
 
-    document
-      .getElementById('login-spinner')
-      .classList.remove('hidden');
+    document.getElementById('dep-section').classList.remove('hidden');
 
-    document
-      .getElementById('login-text')
-      .textContent='Connecting...';
-
-    try{
-
-        const res=await fetch(
-            '/api/login',
-            {
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json'
-                },
-                body:JSON.stringify({
-                    username,
-                    password
-                })
-            }
-        );
-
-        const data=await res.json();
-
-        if(!data.ok){
-            throw new Error(data.error);
-        }
-
-        toast(
-          `Session started — HTTP ${data.status}`,
-          'success'
-        );
-
-        document
-          .getElementById('welcome-card')
-          .classList.add('hidden');
-
-
-        const depSel=
-          document.getElementById('dep-select');
-
-        depSel.innerHTML='';
-
-        data.dependents.forEach(d=>{
-
-            const opt=
-              document.createElement('option');
-
-            opt.value=d.idx;
-            opt.textContent=d.label;
-
-            depSel.appendChild(opt);
-
-        });
-
-        document
-          .getElementById('dep-section')
-          .classList.remove('hidden');
-
-
-    }catch(e){
-
-        toast(
-          `Login failed: ${e.message}`,
-          'error'
-        );
-
-    }
-    finally{
-
-        btn.disabled=false;
-
-        document
-          .getElementById('login-spinner')
-          .classList.add('hidden');
-
-        document
-          .getElementById('login-text')
-          .textContent='Start Session';
-
-    }
-
+  }catch(e){
+    toast(`Login failed: ${e.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    document.getElementById('login-spinner').classList.add('hidden');
+    document.getElementById('login-text').textContent='Start Session';
+  }
 });
-
-
 
 // ── Departments ──────────────────────────────────────────
-document
-.getElementById('btn-load-dept')
-.addEventListener('click',async()=>{
+document.getElementById('btn-load-dept').addEventListener('click',async()=>{
+  const dep_idx=document.getElementById('dep-select').value;
+  const btn=document.getElementById('btn-load-dept');
+  btn.disabled=true;
+  document.getElementById('dept-spinner').classList.remove('hidden');
+  document.getElementById('dept-text').textContent='Loading...';
 
-    const dep_idx=
-      document
-      .getElementById('dep-select')
-      .value;
+  try{
+    const res=await fetch('/api/departments',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dep_idx:parseInt(dep_idx)})
+    });
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
 
-    const btn=
-      document.getElementById('btn-load-dept');
+    state.departments=data.departments;
 
-    btn.disabled=true;
+    const deptSel=document.getElementById('dept-select');
+    deptSel.innerHTML='';
+    data.departments.forEach(d=>{
+      const opt=document.createElement('option');
+      opt.value=d.code;
+      opt.textContent=`${d.code} — ${d.name}`;
+      deptSel.appendChild(opt);
+    });
 
-    document
-      .getElementById('dept-spinner')
-      .classList.remove('hidden');
+    deptSel.disabled=false;
+    document.getElementById('btn-load-docs').disabled=false;
+    document.getElementById('booking-card').classList.remove('hidden');
+    document.getElementById('booking-status').textContent='Select department';
 
-    document
-      .getElementById('dept-text')
-      .textContent='Loading...';
+    toast('Departments loaded.','success');
+    unlockSidebar();
 
-    try{
-
-        const res=await fetch(
-            '/api/departments',
-            {
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json'
-                },
-                body:JSON.stringify({
-                    dep_idx:parseInt(dep_idx)
-                })
-            }
-        );
-
-        const data=await res.json();
-
-        if(!data.ok){
-            throw new Error(data.error);
-        }
-
-        state.departments=data.departments;
-
-        const deptSel=
-          document.getElementById('dept-select');
-
-        deptSel.innerHTML='';
-
-        data.departments.forEach(d=>{
-
-            const opt=
-              document.createElement('option');
-
-            opt.value=d.code;
-            opt.textContent=
-            `${d.code} — ${d.name}`;
-
-            deptSel.appendChild(opt);
-
-        });
-
-        deptSel.disabled=false;
-
-        document
-          .getElementById('btn-load-docs')
-          .disabled=false;
-
-        document
-          .getElementById('booking-card')
-          .classList.remove('hidden');
-
-        document
-          .getElementById('booking-status')
-          .textContent='Select department';
-
-        toast(
-          'Departments loaded.',
-          'success'
-        );
-
-        // Unlock onboarding
-        unlockSidebar();
-
-    }
-    catch(e){
-
-        toast(
-          `Error: ${e.message}`,
-          'error'
-        );
-
-    }
-    finally{
-
-        btn.disabled=false;
-
-        document
-          .getElementById('dept-spinner')
-          .classList.add('hidden');
-
-        document
-          .getElementById('dept-text')
-          .textContent='Load Departments';
-
-    }
-
+  }catch(e){
+    toast(`Error: ${e.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    document.getElementById('dept-spinner').classList.add('hidden');
+    document.getElementById('dept-text').textContent='Load Departments';
+  }
 });
 
-
 // ── Doctors ──────────────────────────────────────────────
-document
-.getElementById('btn-load-docs')
-.addEventListener('click',async()=>{
+document.getElementById('btn-load-docs').addEventListener('click',async()=>{
+  const dept_code=document.getElementById('dept-select').value;
+  const btn=document.getElementById('btn-load-docs');
+  btn.disabled=true;
+  document.getElementById('docs-spinner').classList.remove('hidden');
+  document.getElementById('docs-text').textContent='Loading...';
 
-    const dept_code=
-      document
-      .getElementById('dept-select')
-      .value;
+  try{
+    const res=await fetch('/api/doctors',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dept_code})
+    });
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
 
-    const btn=
-      document.getElementById('btn-load-docs');
+    const docSel=document.getElementById('doc-select');
+    docSel.innerHTML='';
+    data.doctors.forEach(d=>{
+      const opt=document.createElement('option');
+      opt.value=d.value;
+      opt.dataset.label=d.label;
+      opt.textContent=`${d.value} — ${d.label}`;
+      docSel.appendChild(opt);
+    });
 
-    btn.disabled=true;
+    document.getElementById('doc-row').classList.remove('hidden');
+    document.getElementById('booking-status').textContent='Select doctor';
+    toast('Doctors loaded.','success');
 
-    document
-      .getElementById('docs-spinner')
-      .classList.remove('hidden');
+  }catch(e){
+    toast(`Error: ${e.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    document.getElementById('docs-spinner').classList.add('hidden');
+    document.getElementById('docs-text').textContent='Load Doctors';
+  }
+});
 
-    document
-      .getElementById('docs-text')
-      .textContent='Loading...';
+// ── Submit Appointment (SSE stream) ──────────────────────
+document.getElementById('btn-submit').addEventListener('click',async()=>{
+  const dept_code=document.getElementById('dept-select').value;
+  const docSel=document.getElementById('doc-select');
+  const doc_value=docSel.value;
+  const doc_label=docSel.options[docSel.selectedIndex]?.dataset.label||'';
 
-    try{
+  if(!dept_code||!doc_value){
+    toast('Select department and doctor.','error');
+    return;
+  }
 
-        const res=await fetch(
-            '/api/doctors',
-            {
-                method:'POST',
-                headers:{
-                    'Content-Type':'application/json'
-                },
-                body:JSON.stringify({
-                    dept_code
-                })
-            }
-        );
+  const btn=document.getElementById('btn-submit');
+  btn.disabled=true;
+  document.getElementById('submit-spinner').classList.remove('hidden');
+  document.getElementById('submit-text').textContent='Submitting...';
 
-        const data=await res.json();
+  const resultsCard=document.getElementById('results-card');
+  resultsCard.classList.remove('hidden');
 
-        if(!data.ok){
-            throw new Error(data.error);
+  // Reset card header
+  const cardIcon=document.querySelector('#results-card .card-title .icon');
+  if(cardIcon){cardIcon.className='icon icon-warn';cardIcon.textContent='⏳';}
+
+  const statusLabel=document.getElementById('results-status');
+  statusLabel.textContent='0 / 30';
+
+  const progressBar=document.getElementById('progress-bar');
+  const progressText=document.getElementById('progress-label');
+  progressBar.style.width='0%';
+  progressText.textContent='Starting stream...';
+
+  // Hide old banner
+  const banner=document.getElementById('result-banner');
+  banner.classList.add('hidden');
+  banner.innerHTML='';
+
+  resultsCard.scrollIntoView({behavior:'smooth',block:'start'});
+
+  let submitted=0;
+  let successFound=false;
+  let lastErrorMessage='Registration window is closed or an unknown error occurred.';
+
+  try{
+    const res=await fetch('/api/submit',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({dept_code,doc_value,doc_label})
+    });
+
+    if(!res.ok||!res.body)throw new Error('Failed to start stream.');
+
+    const reader=res.body.getReader();
+    const decoder=new TextDecoder();
+    let buffer='';
+
+    while(true){
+      const {value,done}=await reader.read();
+      if(done)break;
+      buffer+=decoder.decode(value,{stream:true});
+
+      let idx;
+      while((idx=buffer.indexOf('\n\n'))!==-1){
+        const raw=buffer.slice(0,idx);
+        buffer=buffer.slice(idx+2);
+
+        if(!raw.startsWith('data:'))continue;
+        const jsonText=raw.replace(/^data:\s*/,'');
+
+        let evt;
+        try{evt=JSON.parse(jsonText);}catch{continue;}
+
+        if(evt.type==='progress'){
+          submitted=evt.submitted;
+          const pct=Math.round((submitted/30)*100);
+          progressBar.style.width=`${pct}%`;
+          progressText.textContent=`Submitted ${submitted} / 30`;
+          statusLabel.textContent=`${submitted} / 30`;
         }
 
-        const docSel=
-          document.getElementById('doc-select');
+        if(evt.type==='result'){
+          // Check for successful registration: redirectURL present
+          if(!successFound&&evt.status==='200'&&evt.text){
+            let parsed=null;
+            try{parsed=JSON.parse(evt.text);}catch{}
 
-        docSel.innerHTML='';
+            if(parsed&&parsed.redirectURL){
+              successFound=true;
+            } else if(parsed&&parsed.errors&&parsed.errors.length>0){
+              // Capture the last known error message
+              lastErrorMessage=parsed.errors[0].message||lastErrorMessage;
+            }
+          }
+        }
 
-        data.doctors.forEach(d=>{
+        if(evt.type==='error'){
+          toast(evt.msg||'Submit error','error');
+        }
 
-            const opt=
-              document.createElement('option');
+        if(evt.type==='done'){
+          progressBar.style.width='100%';
+          progressText.textContent='All requests completed.';
+          statusLabel.textContent='30 / 30';
 
-            opt.value=d.value;
-            opt.dataset.label=d.label;
-
-            opt.textContent=
-            `${d.value} — ${d.label}`;
-
-            docSel.appendChild(opt);
-
-        });
-
-        document
-          .getElementById('doc-row')
-          .classList.remove('hidden');
-
-        document
-          .getElementById('booking-status')
-          .textContent='Select doctor';
-
-        toast(
-          'Doctors loaded.',
-          'success'
-        );
-
-    }
-    catch(e){
-
-        toast(
-          `Error: ${e.message}`,
-          'error'
-        );
-
-    }
-    finally{
-
-        btn.disabled=false;
-
-        document
-          .getElementById('docs-spinner')
-          .classList.add('hidden');
-
-        document
-          .getElementById('docs-text')
-          .textContent='Load Doctors';
-
+          if(successFound){
+            showResultBanner(true,'Your appointment has been registered. Token details will appear in OPD Status.');
+          }else{
+            showResultBanner(false,lastErrorMessage);
+          }
+        }
+      }
     }
 
+  }catch(e){
+    toast(`Submit failed: ${e.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    document.getElementById('submit-spinner').classList.add('hidden');
+    document.getElementById('submit-text').textContent='Submit Appointment';
+  }
 });
 </script>
 </body>
