@@ -263,6 +263,62 @@ select option { background: var(--card); }
   box-shadow: 0 0 16px rgba(255,184,48,0.2);
 }
 
+.btn-schedule {
+  background: rgba(0,119,255,0.1);
+  color: var(--accent2);
+  border: 1px solid rgba(0,119,255,0.35);
+  width: 100%;
+}
+.btn-schedule:not(:disabled):hover {
+  background: rgba(0,119,255,0.2);
+  box-shadow: 0 0 16px rgba(0,119,255,0.2);
+  transform: translateY(-1px);
+}
+
+.btn-remove {
+  background: rgba(255,69,96,0.1);
+  color: var(--danger);
+  border: 1px solid rgba(255,69,96,0.3);
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  min-height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: var(--font-ui);
+  font-weight: 700;
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.btn-remove:hover { background: rgba(255,69,96,0.22); }
+
+#schedules-list { display: flex; flex-direction: column; gap: 10px; }
+
+.schedule-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.schedule-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.schedule-time {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--accent2);
+  font-weight: 700;
+}
+.schedule-details {
+  font-size: 0.75rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ── Status Badge ────────────────────────────────────────── */
 .status-badge {
   font-size: 0.72rem;
@@ -725,18 +781,47 @@ select option { background: var(--card); }
         </div>
       </div>
 
-      <div id="doc-row" class="booking-row hidden">
-        <div class="field">
-          <label for="doc-select">Doctor</label>
-          <select id="doc-select"></select>
+      <div id="doc-row" class="hidden">
+        <div class="booking-row">
+          <div class="field">
+            <label for="doc-select">Doctor</label>
+            <select id="doc-select"></select>
+          </div>
+          <div class="field">
+            <label for="slot-select">Booking Slot</label>
+            <select id="slot-select">
+              <option value="morning">Morning — 7:30 AM</option>
+              <option value="afternoon">Afternoon — 2:00 PM</option>
+            </select>
+          </div>
         </div>
-        <div class="field" style="align-self:end;">
-          <button class="btn btn-danger" id="btn-submit">
-            <span id="submit-spinner" class="spinner hidden"></span>
-            <span id="submit-text">Submit Appointment</span>
-          </button>
+        <div class="booking-row" style="margin-bottom:0;">
+          <div class="field" style="align-self:end;">
+            <button class="btn btn-danger" id="btn-submit">
+              <span id="submit-spinner" class="spinner hidden"></span>
+              <span id="submit-text">Submit Now</span>
+            </button>
+          </div>
+          <div class="field" style="align-self:end;">
+            <button class="btn btn-schedule" id="btn-schedule">
+              <span id="schedule-spinner" class="spinner hidden"></span>
+              <span id="schedule-text">⏰ Schedule</span>
+            </button>
+          </div>
         </div>
       </div>
+    </div>
+
+    <!-- Active Schedules Card -->
+    <div id="schedules-card" class="card hidden">
+      <div class="card-header">
+        <div class="card-title">
+          <div class="icon icon-blue">⏰</div>
+          Active Schedules
+        </div>
+        <span class="status-badge badge-info" id="schedule-count-badge">0 scheduled</span>
+      </div>
+      <div id="schedules-list"></div>
     </div>
 
     <!-- Progress & Result Card -->
@@ -764,12 +849,18 @@ select option { background: var(--card); }
 </div>
 
 <script>
-// ── Clock ─────────────────────────────────────────────────
-function updateClock(){
+// ── IST helpers ───────────────────────────────────────────
+function getIST(){
   const now=new Date();
+  return new Date(now.getTime()+now.getTimezoneOffset()*60000+5.5*3600000);
+}
+
+// ── Clock (IST) ───────────────────────────────────────────
+function updateClock(){
+  const ist=getIST();
   const pad=n=>String(n).padStart(2,'0');
   document.getElementById('clock').textContent=
-    `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+    `${pad(ist.getHours())}:${pad(ist.getMinutes())}:${pad(ist.getSeconds())} IST`;
 }
 updateClock();
 setInterval(updateClock,1000);
@@ -990,6 +1081,10 @@ document.getElementById('btn-login').addEventListener('click',async()=>{
 
     document.getElementById('dep-section').classList.remove('hidden');
 
+    // Restore any server-side schedules from this session
+    fetchSchedules();
+    startPolling();
+
   }catch(e){
     toast(`Login failed: ${e.message}`,'error');
   }finally{
@@ -1084,18 +1179,71 @@ document.getElementById('btn-load-docs').addEventListener('click',async()=>{
   }
 });
 
-// ── Submit Appointment (SSE stream) ──────────────────────
-document.getElementById('btn-submit').addEventListener('click',async()=>{
-  const dept_code=document.getElementById('dept-select').value;
-  const docSel=document.getElementById('doc-select');
-  const doc_value=docSel.value;
-  const doc_label=docSel.options[docSel.selectedIndex]?.dataset.label||'';
+// ── Server-side schedules ─────────────────────────────────
+let _pollInterval=null;
 
-  if(!dept_code||!doc_value){
-    toast('Select department and doctor.','error');
-    return;
+function renderActiveSchedules(schedules){
+  const list=document.getElementById('schedules-list');
+  const card=document.getElementById('schedules-card');
+  const badge=document.getElementById('schedule-count-badge');
+  const active=(schedules||[]).filter(s=>s.status==='pending'||s.status==='running');
+  if(!active.length){card.classList.add('hidden');return;}
+  card.classList.remove('hidden');
+  badge.textContent=`${active.length} scheduled`;
+  list.innerHTML=active.map(s=>`
+    <div class="schedule-item">
+      <div class="schedule-info">
+        <div class="schedule-time">${s.target_time}</div>
+        <div class="schedule-details">${s.slot_label} &middot; ${s.doc_label} &middot; ${s.dept_code}</div>
+      </div>
+      ${s.status==='pending'
+        ?`<button class="btn-remove" onclick="cancelSchedule(${s.id})">&#x2715; Remove</button>`
+        :`<span class="status-badge badge-warn">Running&#x2026;</span>`}
+    </div>
+  `).join('');
+}
+
+async function fetchSchedules(){
+  try{
+    const res=await fetch('/api/schedules');
+    const data=await res.json();
+    if(!data.ok)return;
+    renderActiveSchedules(data.schedules);
+    for(const s of data.schedules){
+      if(s.status==='done'||s.status==='error'){
+        const ok=s.status==='done'&&s.success;
+        toast(ok
+          ?`Scheduled appointment registered! (${s.slot_label})`
+          :`Scheduled appointment failed: ${s.message}`,
+          ok?'success':'error',8000);
+        if(ok)setTimeout(()=>loadOpdStatus(true),1500);
+        await fetch(`/api/schedule/${s.id}`,{method:'DELETE'}).catch(()=>{});
+      }
+    }
+    const hasPending=data.schedules.some(s=>s.status==='pending'||s.status==='running');
+    if(!hasPending&&_pollInterval){clearInterval(_pollInterval);_pollInterval=null;}
+  }catch(e){}
+}
+
+function startPolling(){
+  if(_pollInterval)return;
+  _pollInterval=setInterval(fetchSchedules,5000);
+}
+
+async function cancelSchedule(id){
+  try{
+    const res=await fetch(`/api/schedule/${id}`,{method:'DELETE'});
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
+    toast('Schedule cancelled.','warn');
+    await fetchSchedules();
+  }catch(e){
+    toast(`Cancel failed: ${e.message}`,'error');
   }
+}
 
+// ── Core submit function (shared by immediate & scheduled) ─
+async function doSubmit(deptCode,docValue,docLabel){
   const btn=document.getElementById('btn-submit');
   btn.disabled=true;
   document.getElementById('submit-spinner').classList.remove('hidden');
@@ -1104,7 +1252,6 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
   const resultsCard=document.getElementById('results-card');
   resultsCard.classList.remove('hidden');
 
-  // Reset card header
   const cardIcon=document.querySelector('#results-card .card-title .icon');
   if(cardIcon){cardIcon.className='icon icon-warn';cardIcon.textContent='⏳';}
 
@@ -1116,7 +1263,6 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
   progressBar.style.width='0%';
   progressText.textContent='Starting stream...';
 
-  // Hide old banner
   const banner=document.getElementById('result-banner');
   banner.classList.add('hidden');
   banner.innerHTML='';
@@ -1131,7 +1277,7 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
     const res=await fetch('/api/submit',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({dept_code,doc_value,doc_label})
+      body:JSON.stringify({dept_code:deptCode,doc_value:docValue,doc_label:docLabel})
     });
 
     if(!res.ok||!res.body)throw new Error('Failed to start stream.');
@@ -1141,7 +1287,7 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
     let buffer='';
 
     while(true){
-      const {value,done}=await reader.read();
+      const{value,done}=await reader.read();
       if(done)break;
       buffer+=decoder.decode(value,{stream:true});
 
@@ -1149,10 +1295,8 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
       while((idx=buffer.indexOf('\n\n'))!==-1){
         const raw=buffer.slice(0,idx);
         buffer=buffer.slice(idx+2);
-
         if(!raw.startsWith('data:'))continue;
         const jsonText=raw.replace(/^data:\s*/,'');
-
         let evt;
         try{evt=JSON.parse(jsonText);}catch{continue;}
 
@@ -1165,29 +1309,23 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
         }
 
         if(evt.type==='result'){
-          // Check for successful registration: redirectURL present
           if(!successFound&&evt.status==='200'&&evt.text){
             let parsed=null;
             try{parsed=JSON.parse(evt.text);}catch{}
-
             if(parsed&&parsed.redirectURL){
               successFound=true;
-            } else if(parsed&&parsed.errors&&parsed.errors.length>0){
-              // Capture the last known error message
+            }else if(parsed&&parsed.errors&&parsed.errors.length>0){
               lastErrorMessage=parsed.errors[0].message||lastErrorMessage;
             }
           }
         }
 
-        if(evt.type==='error'){
-          toast(evt.msg||'Submit error','error');
-        }
+        if(evt.type==='error'){toast(evt.msg||'Submit error','error');}
 
         if(evt.type==='done'){
           progressBar.style.width='100%';
           progressText.textContent='All requests completed.';
           statusLabel.textContent='30 / 30';
-
           if(successFound){
             showResultBanner(true,'Your appointment has been registered. Token details will appear in OPD Status.');
           }else{
@@ -1196,13 +1334,59 @@ document.getElementById('btn-submit').addEventListener('click',async()=>{
         }
       }
     }
-
   }catch(e){
     toast(`Submit failed: ${e.message}`,'error');
   }finally{
     btn.disabled=false;
     document.getElementById('submit-spinner').classList.add('hidden');
-    document.getElementById('submit-text').textContent='Submit Appointment';
+    document.getElementById('submit-text').textContent='Submit Now';
+  }
+}
+
+// ── Submit Now ────────────────────────────────────────────
+document.getElementById('btn-submit').addEventListener('click',async()=>{
+  const dept_code=document.getElementById('dept-select').value;
+  const docSel=document.getElementById('doc-select');
+  const doc_value=docSel.value;
+  const doc_label=docSel.options[docSel.selectedIndex]?.dataset.label||'';
+  if(!dept_code||!doc_value){toast('Select department and doctor.','error');return;}
+  await doSubmit(dept_code,doc_value,doc_label);
+});
+
+// ── Schedule Appointment (server-side) ───────────────────
+document.getElementById('btn-schedule').addEventListener('click',async()=>{
+  const dept_code=document.getElementById('dept-select').value;
+  const docSel=document.getElementById('doc-select');
+  const doc_value=docSel.value;
+  const doc_label=docSel.options[docSel.selectedIndex]?.dataset.label||'';
+  const slot_key=document.getElementById('slot-select').value;
+  const dep_idx=parseInt(document.getElementById('dep-select').value);
+
+  if(!dept_code||!doc_value){toast('Select department and doctor first.','error');return;}
+
+  const btn=document.getElementById('btn-schedule');
+  btn.disabled=true;
+  document.getElementById('schedule-spinner').classList.remove('hidden');
+  document.getElementById('schedule-text').textContent='Scheduling...';
+
+  try{
+    const res=await fetch('/api/schedule',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({slot_key,dept_code,doc_value,doc_label,dep_idx})
+    });
+    const data=await res.json();
+    if(!data.ok)throw new Error(data.error);
+    toast(`Scheduled: ${data.target_time} — ${data.slot_label}`,'success',6000);
+    await fetchSchedules();
+    startPolling();
+    document.getElementById('schedules-card').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    toast(`Schedule failed: ${e.message}`,'error');
+  }finally{
+    btn.disabled=false;
+    document.getElementById('schedule-spinner').classList.add('hidden');
+    document.getElementById('schedule-text').textContent='&#x23F0; Schedule';
   }
 });
 </script>

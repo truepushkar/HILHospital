@@ -1,6 +1,7 @@
 import json
 import html
 import re
+from datetime import datetime, timezone, timedelta
 from urllib.parse import parse_qs, urlencode, urlparse
 import concurrent.futures
 import time
@@ -23,9 +24,21 @@ NEW_REG_URL = f"{BASE}/ords/r/xxhilapxprd01/hospital-registration-system-renukoo
 LOGIN_ACCEPT_URL = f"{BASE}/ords/wwv_flow.accept"
 AJAX_URL = f"{BASE}/ords/wwv_flow.ajax"
 
+IST = timezone(timedelta(hours=5, minutes=30))
+
+SLOT_TIMES = {
+    'morning':   {'hour': 7,  'minute': 29, 'second': 56, 'label': '7:30 AM (Morning)'},
+    'afternoon': {'hour': 13, 'minute': 59, 'second': 56, 'label': '2:00 PM (Afternoon)'},
+}
+
 # In-memory session store (keyed by Flask session id)
 _sessions: dict = {}
 _lock = threading.Lock()
+
+# Server-side schedule store
+_schedules: dict = {}
+_schedule_lock = threading.Lock()
+_schedule_counter = 0
 
 
 def get_store(sid: str) -> dict:
@@ -340,6 +353,92 @@ def submit_final(http_session, p_instance, final_data):
     return resp
 
 
+# ─── Scheduling helpers ───────────────────────────────────────────────────────
+
+def next_slot_ist(slot_key: str):
+    """Return (target datetime in IST, delay_seconds) for the next valid slot."""
+    slot = SLOT_TIMES[slot_key]
+    now = datetime.now(IST)
+    target = now.replace(hour=slot['hour'], minute=slot['minute'],
+                         second=slot['second'], microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    for _ in range(8):
+        wd = target.weekday()  # Mon=0 … Sun=6
+        if wd == 6 or (wd == 5 and slot_key == 'afternoon'):
+            target += timedelta(days=1)
+        else:
+            break
+    delay = max((target - datetime.now(IST)).total_seconds(), 1)
+    return target, delay
+
+
+def execute_schedule(schedule_id: int):
+    with _schedule_lock:
+        sched = _schedules.get(schedule_id)
+        if not sched or sched['status'] != 'pending':
+            return
+        sched['status'] = 'running'
+
+    store = get_store(sched['sid'])
+    meta = store.get('meta')
+
+    if not meta:
+        with _schedule_lock:
+            sched['status'] = 'error'
+            sched['message'] = 'Session expired. Please log in again.'
+        return
+
+    try:
+        dep_idx = sched['dep_idx']
+        dependents = store.get('dependents', [])
+        if dep_idx >= len(dependents):
+            raise RuntimeError('Dependent index out of range.')
+
+        newreg_html = extract_new_registration_page(
+            store['http_session'], meta['p_instance'], dependents[dep_idx]
+        )
+        final_data = build_final_submit(
+            store['http_session'], meta['p_instance'],
+            newreg_html, sched['dept_code'], sched['doc_value'], sched['doc_label']
+        )
+
+        success_found = False
+        last_error = 'Registration window is closed or unknown error.'
+
+        def make_req(req_id):
+            try:
+                resp = submit_final(store['http_session'], meta['p_instance'], final_data)
+                return {'id': req_id, 'status': resp.status_code, 'text': resp.text}
+            except Exception as ex:
+                return {'id': req_id, 'status': 'Error', 'text': str(ex)}
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            futs = [executor.submit(make_req, i) for i in range(1, 31)]
+            for f in concurrent.futures.as_completed(futs):
+                res = f.result()
+                if not success_found and str(res.get('status')) == '200':
+                    try:
+                        parsed = json.loads(res['text'])
+                        if parsed.get('redirectURL'):
+                            success_found = True
+                        elif parsed.get('errors'):
+                            last_error = parsed['errors'][0].get('message', last_error)
+                    except Exception:
+                        pass
+
+        with _schedule_lock:
+            sched['status'] = 'done'
+            sched['success'] = success_found
+            sched['message'] = 'Appointment registered!' if success_found else last_error
+
+    except Exception as e:
+        with _schedule_lock:
+            sched['status'] = 'error'
+            sched['success'] = False
+            sched['message'] = str(e)
+
+
 # ─── Routes ───────────────────────────────────────────────────────────────────
 
 @app.route("/")
@@ -479,5 +578,99 @@ def api_submit():
                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
-#if __name__ == "__main__":
-#    app.run(debug=False, host="0.0.0.0",port=8000, threaded=True)
+@app.route("/api/schedule", methods=["POST"])
+def api_schedule_create():
+    sid = session.get("sid")
+    store = get_store(sid)
+    meta = store.get("meta")
+    if not meta:
+        return jsonify({"ok": False, "error": "Not logged in."}), 400
+
+    body = request.get_json()
+    slot_key = body.get("slot_key", "morning")
+    dept_code = body.get("dept_code", "")
+    doc_value = body.get("doc_value", "")
+    doc_label = body.get("doc_label", "")
+    dep_idx = int(body.get("dep_idx", 0))
+
+    if slot_key not in SLOT_TIMES:
+        return jsonify({"ok": False, "error": "Invalid slot."}), 400
+    if not dept_code or not doc_value:
+        return jsonify({"ok": False, "error": "Department and doctor required."}), 400
+
+    target, delay = next_slot_ist(slot_key)
+
+    global _schedule_counter
+    with _schedule_lock:
+        _schedule_counter += 1
+        schedule_id = _schedule_counter
+
+    sched = {
+        "id": schedule_id,
+        "sid": sid,
+        "slot_key": slot_key,
+        "slot_label": SLOT_TIMES[slot_key]["label"],
+        "dept_code": dept_code,
+        "doc_value": doc_value,
+        "doc_label": doc_label,
+        "dep_idx": dep_idx,
+        "target_time": target.strftime("%a %d %b %H:%M:%S IST"),
+        "status": "pending",
+        "success": None,
+        "message": None,
+    }
+
+    timer = threading.Timer(delay, execute_schedule, args=[schedule_id])
+    timer.daemon = True
+    timer.start()
+    sched["timer"] = timer
+
+    with _schedule_lock:
+        _schedules[schedule_id] = sched
+
+    return jsonify({
+        "ok": True,
+        "id": schedule_id,
+        "target_time": sched["target_time"],
+        "slot_label": sched["slot_label"],
+        "delay_seconds": round(delay),
+    })
+
+
+@app.route("/api/schedules", methods=["GET"])
+def api_schedules_list():
+    sid = session.get("sid")
+    with _schedule_lock:
+        items = [
+            {
+                "id": s["id"],
+                "slot_key": s["slot_key"],
+                "slot_label": s["slot_label"],
+                "dept_code": s["dept_code"],
+                "doc_label": s["doc_label"],
+                "target_time": s["target_time"],
+                "status": s["status"],
+                "success": s.get("success"),
+                "message": s.get("message"),
+            }
+            for s in _schedules.values()
+            if s["sid"] == sid
+        ]
+    return jsonify({"ok": True, "schedules": items})
+
+
+@app.route("/api/schedule/<int:schedule_id>", methods=["DELETE"])
+def api_schedule_delete(schedule_id):
+    sid = session.get("sid")
+    with _schedule_lock:
+        sched = _schedules.get(schedule_id)
+        if not sched or sched["sid"] != sid:
+            return jsonify({"ok": False, "error": "Schedule not found."}), 404
+        if sched["status"] == "pending":
+            sched["timer"].cancel()
+        del _schedules[schedule_id]
+    return jsonify({"ok": True})
+
+
+if __name__ == "__main__":
+    app.run(debug=False, host="0.0.0.0",port=8000, threaded=True)
