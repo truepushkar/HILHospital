@@ -57,6 +57,8 @@ The 11px floor is a hard rule: nothing functional sits below it.
 - **Result strip** — icon + title + message inside a tinted hairline box; green for registered, red for refused.
 - **OPD table** — 13.5px rows, `tabular-nums` for patient/visit/employee numbers, token as a green chip; under 720px the doctor moves under the patient name and visit/employee are dropped.
 - **Toasts** — bottom-right stack (full width under 720px), hairline card, tone-tinted icon only.
+- **Remember row** — a checked-by-default checkbox under the session controls: "Keep username and password on this device". It writes `hil.credentials.v1` to `localStorage` on a successful connect; unticking deletes the entry.
+- **Install button** — in the top bar, cobalt on white, hidden until `beforeinstallprompt` fires. Text plus a download glyph on desktop; a 32px icon-only square under 720px so the bar still fits a 360px phone.
 
 ## States
 
@@ -67,6 +69,23 @@ Motion is limited to a 170ms control transition, a 200–300ms rise on the dispa
 ## Browser surfaces
 
 Selection is cobalt with white text; the caret is cobalt; scrollbars are 10px with a hairline thumb; focus rings are cobalt; `tabular-nums` is applied wherever numbers change in place (countdown, attempts, times, IDs).
+
+## App shell
+
+The page installs as a standalone Chrome app (Android and desktop):
+
+- `static/manifest.webmanifest` — name "Hindalco Hospital Registration", short name "Registration", `display: standalone`, `start_url: /`, paper theme and background so the splash does not flash white-on-white.
+- `static/icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `apple-touch-icon-180.png` — a cobalt ground with a white clock at 7:30, the window the tool exists for. The maskable variant keeps the mark inside the safe zone.
+- `static/sw.js`, served from `/sw.js` so its scope is the whole app. The shell is precached and served network-first; **no `/api/` request is ever cached** — a stale OPD table would be worse than an error.
+
+## Session and credentials
+
+Two layers, in this order:
+
+1. **Server session** — the Flask cookie survives a refresh, so the page asks `/api/session` on load and rebuilds the dependent list from it. No credentials leave the browser.
+2. **Saved credentials** — only if layer 1 reports no session (server restarted). The username and password are replayed once to log back in.
+
+Passwords live in `localStorage` in plain text, by the owner's choice. Never send them anywhere else, and never sync them.
 
 ## Rules for future work
 

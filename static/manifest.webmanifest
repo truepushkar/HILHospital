@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "Hindalco Hospital Registration",
+  "short_name": "Registration",
+  "description": "Arm the 07:30 or 14:00 registration window and fire the booking the moment it opens.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait-primary",
+  "background_color": "#F4F5F1",
+  "theme_color": "#F4F5F1",
+  "categories": ["medical", "productivity"],
+  "icons": [
+    { "src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/static/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

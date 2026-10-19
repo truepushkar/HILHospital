@@ -11,7 +11,8 @@ import requests
 from bs4 import BeautifulSoup
 import os
 
-from flask import Flask, request, jsonify, session, render_template, Response, stream_with_context
+from flask import (Flask, request, jsonify, session, render_template, Response,
+                   stream_with_context, send_from_directory)
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-change-me")
@@ -445,6 +446,33 @@ def execute_schedule(schedule_id: int):
 def index():
     session.setdefault("sid", str(id(session)))
     return render_template("index.html")
+
+
+@app.route("/sw.js")
+def service_worker():
+    """Served from the root so the worker controls the whole app, not /static/."""
+    resp = send_from_directory(app.static_folder, "sw.js", mimetype="text/javascript")
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
+
+
+@app.route("/api/session")
+def api_session():
+    """Lets a refreshed page pick its session back up without a new login."""
+    sid = session.get("sid")
+    store = get_store(sid) if sid else None
+    if not store or not store.get("meta"):
+        return jsonify({"ok": True, "active": False})
+    return jsonify({
+        "ok": True,
+        "active": True,
+        "dependents": [
+            {"label": d["label"], "idx": i}
+            for i, d in enumerate(store.get("dependents", []))
+        ],
+    })
+
 
 @app.route("/api/opd_status")
 def api_opd_status():
