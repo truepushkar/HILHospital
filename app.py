@@ -457,23 +457,6 @@ def service_worker():
     return resp
 
 
-@app.route("/api/session")
-def api_session():
-    """Lets a refreshed page pick its session back up without a new login."""
-    sid = session.get("sid")
-    store = get_store(sid) if sid else None
-    if not store or not store.get("meta"):
-        return jsonify({"ok": True, "active": False})
-    return jsonify({
-        "ok": True,
-        "active": True,
-        "dependents": [
-            {"label": d["label"], "idx": i}
-            for i, d in enumerate(store.get("dependents", []))
-        ],
-    })
-
-
 @app.route("/api/opd_status")
 def api_opd_status():
     sid = session.get("sid")

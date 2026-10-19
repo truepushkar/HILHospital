@@ -80,12 +80,11 @@ The page installs as a standalone Chrome app (Android and desktop):
 
 ## Session and credentials
 
-Two layers, in this order:
+A reload always lands signed out. The page fills the username and password from what the browser remembers, and then waits: connecting is a deliberate tap, never automatic. There is no session-restore call and no silent re-login.
 
-1. **Server session** — the Flask cookie survives a refresh, so the page asks `/api/session` on load and rebuilds the dependent list from it. No credentials leave the browser.
-2. **Saved credentials** — only if layer 1 reports no session (server restarted). The username and password are replayed once to log back in.
+That is a product rule, not an oversight. The tool fires 30 registrations the moment it is armed; it should not come back from a refresh already holding a live APEX session that the owner has not looked at.
 
-Passwords live in `localStorage` in plain text, by the owner's choice. Never send them anywhere else, and never sync them.
+Credentials live in `localStorage` under `hil.credentials.v1` in plain text, by the owner's choice; unticking the box deletes them. Never send them anywhere else, and never sync them.
 
 ## Rules for future work
 

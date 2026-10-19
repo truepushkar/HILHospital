@@ -842,25 +842,7 @@ input:disabled,select:disabled{background:#F0F1ED;color:#656E73;cursor:not-allow
     }
   }
 
-  /* A refresh keeps the Flask session alive on the server, so ask it before
-     falling back to replaying saved credentials. */
-  async function restoreSession(){
-    try {
-      const data = await getJSON('/api/session');
-      if (!data || !data.active) return false;
-      state.session = true;
-      state.dependents = data.dependents || [];
-      applyDependents();
-      setSession('live', 'Session open', `${state.dependents.length} dependent${state.dependents.length === 1 ? '' : 's'}`);
-      setStep('session', 'done', 'Session open');
-      setStep('dependent', 'active', `${state.dependents.length} found`);
-      syncSetupChip();
-      syncGate();
-      refreshSchedules();
-      startPolling();
-      return true;
-    } catch { return false; }
-  }
+
 
   /* ── Departments ───────────────────────────────────────── */
   async function loadDepartments(){
@@ -1325,12 +1307,8 @@ input:disabled,select:disabled{background:#F0F1ED;color:#656E73;cursor:not-allow
     if (u && p) writeCreds(u, p);
   });
 
-  (async () => {
-    const restored = await restoreSession();
-    if (!restored && saved && saved.u && saved.p){
-      await connect();   // the server lost the session (restart) — log back in
-    }
-  })();
+  /* A reload always starts signed out: the fields are filled from what this
+     browser remembers, but connecting stays the owner's tap. */
 
   /* ── Installable app ───────────────────────────────────── */
   let installEvent = null;
